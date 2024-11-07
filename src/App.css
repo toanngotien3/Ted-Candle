@@ -1,0 +1,12 @@
+*{
+  padding:0;
+  margin:0;
+  box-sizing: border-box;
+}
+
+#game{
+  overflow: hidden;
+  background-image: url('../src/assets/bg.jpg');
+  background-size: cover;
+  background-position: center;
+}
