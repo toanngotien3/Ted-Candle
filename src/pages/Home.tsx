@@ -58,7 +58,7 @@ export const Home = () => {
 
 
             if (game && isPlaying) {
-                const cameraMoveTemp = isMobile ? 1 : 3
+                const cameraMoveTemp = isMobile ? 3 : 3
 
                 const stickGrowTemp = isMobile ? 15 : 30
                 const stickWidthTemp = isMobile ? 5 : 15
