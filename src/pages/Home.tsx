@@ -13,17 +13,26 @@ export const Home = () => {
     const [tobacoImage, setTobacoImage] = useState<CanvasImageSource | null>(null)
 
     const [isLoading, setIsLoading] = useState(true)
+    const [isPlaying, setIsPlaying] = useState(false)
+    const [isDead, setIsDead] = useState(false)
     const [isInit, setIsInit] = useState<boolean>(false)
-    const [gameState, setGameState] = useState("ready")
+    const [gameState, setGameState] = useState<string>("ready")
+    const [score, setScore] = useState<number>(0)
+
+
     const [cameraOffset, setCameraOffset] = useState(0);
+    const [cameraMove, setCameraMove] = useState(0);
 
     const [walls, setWalls] = useState([{ x: 0, y: 0, width: 0, height: 0 }, { x: 0, y: 0, width: 0, height: 0 }])
     const [wallStep, setWallStep] = useState(0)
+    const [wallX, setWallX] = useState(0)
+    const [wallGrow, setWallGrow] = useState(0)
     const [currentWall, setCurrentWall] = useState(0)
 
     const [heroPosition, setHeroPosition] = useState({ x: 0, y: 0, distance: 0 });
     const [heroSize, setHeroSize] = useState({ width: 0, height: 0 })
 
+    const [stickGrow, setStickGrow] = useState(0)
     const [stickWidth, setStickWidth] = useState(0)
     const [stickLength, setStickLength] = useState(0)
     const [stickAngle, setStickAngle] = useState(0)
@@ -35,6 +44,10 @@ export const Home = () => {
 
     useEffect(() => {
         if (!isLoading) {
+            document.addEventListener("contextmenu", (event) => {
+                event.preventDefault();
+            });
+
             const windowWidth = window.innerWidth
             const isMobile = windowWidth <= 768
             const game = document.getElementById('game')
@@ -44,10 +57,14 @@ export const Home = () => {
             const tobacoImage = document.getElementById('tobaco') as CanvasImageSource
 
 
-            if (game) {
+            if (game && isPlaying) {
+                const cameraMoveTemp = isMobile ? 1 : 3
+
+                const stickGrowTemp = isMobile ? 15 : 30
                 const stickWidthTemp = isMobile ? 5 : 15
 
                 const wallHeightTemp = isMobile ? 200 : 500
+                const wallGrow = isMobile ? 100 : 300
                 const wallWidthTemp = isMobile ? 100 : 200
                 const wallXtemp = isMobile ? 50 : 200
                 const wallStepTemp = isMobile ? 150 : 400
@@ -58,10 +75,16 @@ export const Home = () => {
                 const heroPositionXTemp = wallXtemp + wallWidthTemp / 2 - heroSizeTemp.width / 2
                 const heroPositionYTemp = game.offsetHeight - wallHeightTemp - heroSizeTemp.height
 
+                setScore(0)
+                setCameraMove(cameraMoveTemp)                                    
+
+                setWallX(wallXtemp)
                 setWalls([{ x: wallXtemp, y: wallYtemp, width: wallWidthTemp, height: wallHeightTemp }, { x: wallXtemp + wallStepTemp, y: wallYtemp, width: wallWidthTemp, height: wallHeightTemp }])
+                setWallGrow(wallGrow)
                 setWallStep(wallStepTemp)
                 setCurrentWall(0)
 
+                setStickGrow(stickGrowTemp)
                 setStickWidth(stickWidthTemp)
                 setStickPosition({ x: wallXtemp + wallWidthTemp, y: wallYtemp })
                 setStickLength(0);
@@ -80,10 +103,10 @@ export const Home = () => {
                 setIsInit(true)
             }
         }
-    }, [isLoading])
+    }, [isLoading, isPlaying])
 
     useEffect(() => {
-        if (isInit) {
+        if (isInit && isPlaying) {
             const canvas = canvasRef.current;
             const game = document.getElementById('game')
             if (canvas && game) {
@@ -93,6 +116,21 @@ export const Home = () => {
 
                 if (ctx && heroImage && beerImage && heroWalkImage && tobacoImage) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // draw score
+                    ctx.shadowColor = "rgba(0, 0, 0, 1)";
+                    ctx.shadowBlur = 10;
+                    ctx.shadowOffsetX = 4;
+                    ctx.shadowOffsetY = 4;
+                    ctx.font = "80px Arial";
+                    ctx.fillStyle = "#00ff00";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+
+                    ctx.fillText(`${score.toString()}`, canvas.width / 2, 150);
+
+                    // draw score
+
 
                     //draw walls
 
@@ -136,7 +174,7 @@ export const Home = () => {
 
         }
 
-    }, [isInit, stickLength, gameState, stickAngle, heroPosition, cameraOffset])
+    }, [isInit, stickLength, gameState, stickAngle, heroPosition, cameraOffset, isPlaying])
 
     useEffect(() => {
         if (gameState === "growing") {
@@ -144,7 +182,7 @@ export const Home = () => {
             const ctx = canvas?.getContext('2d');
             if (ctx && canvas) {
                 const growingInterval = setInterval(() => {
-                    setStickLength((prev) => prev + 15)
+                    setStickLength((prev) => prev + stickGrow)
                 }, 100)
                 return () => clearInterval(growingInterval);
             }
@@ -154,7 +192,7 @@ export const Home = () => {
 
 
     const handleMouseDown = () => {
-        if (isInit) {
+        if (isInit && isPlaying) {
             if (gameState === "ready") {
                 setGameState("growing")
             }
@@ -162,14 +200,15 @@ export const Home = () => {
     }
 
     const handleMouseUp = () => {
-        if (isInit) {
+        if (isInit && isPlaying) {
             if (gameState === "growing") {
                 setGameState("dropping")
                 const targetWall = walls[walls.length - 1]
-                let currentStickAngle = 0
-                const betweenStickAngle = calculateAngleBetweenPlatforms(stickPosition.x, stickPosition.y, targetWall.x, targetWall.y, targetWall.height - walls[currentWall].height)
+                const fixYTemp = targetWall.height === walls[currentWall].height ? 0 : (targetWall.height < walls[currentWall].height ? fixY : - fixY)
+                const betweenStickAngle = calculateAngleBetweenPlatforms(stickPosition.x, stickPosition.y, targetWall.x, targetWall.y - fixYTemp, targetWall.height - walls[currentWall].height)
                 const targetStickAngle = 90 - betweenStickAngle
                 const betweenStickAngleRadians = -betweenStickAngle * Math.PI / 180
+                let currentStickAngle = 0
                 const dropStick = () => {
                     if (currentStickAngle < targetStickAngle) {
                         currentStickAngle += 2;
@@ -184,7 +223,7 @@ export const Home = () => {
                             const conditionStick = stickLength
                             if (currentHeroPositionX <= stickPosition.x + conditionStick) {
                                 currentDistance += 0.2
-                                if (betweenStickAngle < 0) {
+                                if (betweenStickAngle <= 0) {
                                     if (currentHeroPositionY < targetWall.y - heroSize.height) {
                                         currentHeroPositionX += currentDistance * Math.cos(betweenStickAngleRadians)
                                         currentHeroPositionY += currentDistance * Math.sin(betweenStickAngleRadians)
@@ -195,22 +234,29 @@ export const Home = () => {
                                     }
                                 }
                                 else {
-                                    if (currentHeroPositionY > targetWall.y - heroSize.height + fixY) {
+                                    if (currentHeroPositionY > targetWall.y - heroSize.height) {
                                         currentHeroPositionX += currentDistance * Math.cos(betweenStickAngleRadians)
                                         currentHeroPositionY += currentDistance * Math.sin(betweenStickAngleRadians)
                                     }
                                     else {
                                         currentHeroPositionX += currentDistance
-                                        currentHeroPositionY = targetWall.y - heroSize.height + fixY
+                                        currentHeroPositionY = targetWall.y - heroSize.height
                                     }
                                 }
-
-                                if (targetWall.x > window.innerWidth / 2) setCameraOffset(prev => prev + currentDistance); // Di chuyển cảnh ngược lại
                                 setHeroPosition({ x: currentHeroPositionX, y: currentHeroPositionY, distance: currentDistance })
                                 requestAnimationFrame(heroWalking);
                             } else {
-                                if (currentHeroPositionX >= targetWall.x && currentHeroPositionX + heroSize.width / 4 <= targetWall.x + targetWall.width) {
-                                    let randomWallHeight = (Math.random() * 2 - 1) * 100
+                                if (currentHeroPositionX >= targetWall.x && currentHeroPositionX + heroSize.width / 8 <= targetWall.x + targetWall.width) {
+                                    let cameraOffsetTemp = cameraOffset;
+                                    const moveCamera = setInterval(() => {
+                                        if (cameraOffsetTemp < targetWall.x - wallX) {
+                                            cameraOffsetTemp += cameraMove
+                                            setCameraOffset(cameraOffsetTemp);
+                                        }
+                                        else clearInterval(moveCamera)
+                                    }, 1)
+                                    let randomWallHeight = (Math.floor(Math.random() * 2) - 1) * wallGrow
+                                    setScore(prev => prev + 1)
                                     setWalls([...walls, { x: targetWall.x + wallStep + Math.random() * wallStep, y: walls[0].y - randomWallHeight, width: walls[0].width, height: walls[0].height + randomWallHeight }])
                                     setStickLength(0);
                                     setStickAngle(0);
@@ -228,8 +274,8 @@ export const Home = () => {
                                             requestAnimationFrame(heroFalling)
                                         }
                                         else {
-                                            alert('Game Over!');
-                                            setIsLoading(true)
+                                            setIsDead(true)
+                                            setIsPlaying(false)
                                         }
                                     }
                                     requestAnimationFrame(heroFalling);
@@ -257,6 +303,18 @@ export const Home = () => {
         id="game"
         className="h-screen w-full"
     >
+        {isLoading && <div id="loading">Loading...</div>}
+        {!isLoading && !isPlaying && !isDead && <div id="play">
+            <h1>TED BEAR ETH</h1>
+            <button onClick={() => setIsPlaying(true)}>Play game</button>
+        </div>}
+        {!isLoading && isDead && <div id="dead">
+            <h1>BRO! YOU DEAD!</h1>
+            <button onClick={() => {
+                setIsDead(false)
+                setIsPlaying(true)
+            }}>Play again</button>
+        </div>}
         <canvas ref={canvasRef} />
         <img id="tobaco" src={TobacoImg} className="hidden" />
         <img id="ted" src={TedImg} className="hidden" />
