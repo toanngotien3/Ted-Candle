@@ -33,6 +33,7 @@ export const Home = () => {
     const [heroSize, setHeroSize] = useState({ width: 0, height: 0 })
 
     const [stickGrow, setStickGrow] = useState(0)
+    const [stickAngleGrow, setStickAngleGrow] = useState(0)
     const [stickWidth, setStickWidth] = useState(0)
     const [stickLength, setStickLength] = useState(0)
     const [stickAngle, setStickAngle] = useState(0)
@@ -62,7 +63,8 @@ export const Home = () => {
 
                 const stickGrowTemp = isMobile ? 15 : 30
                 const stickWidthTemp = isMobile ? 5 : 15
-
+                const stickAngleGrowTemp = isMobile ? 5 : 2
+                
                 const wallHeightTemp = isMobile ? 200 : 500
                 const wallGrow = isMobile ? 100 : 300
                 const wallWidthTemp = isMobile ? 100 : 200
@@ -85,6 +87,7 @@ export const Home = () => {
                 setCurrentWall(0)
 
                 setStickGrow(stickGrowTemp)
+                setStickAngleGrow(stickAngleGrowTemp)
                 setStickWidth(stickWidthTemp)
                 setStickPosition({ x: wallXtemp + wallWidthTemp, y: wallYtemp })
                 setStickLength(0);
@@ -211,7 +214,7 @@ export const Home = () => {
                 let currentStickAngle = 0
                 const dropStick = () => {
                     if (currentStickAngle < targetStickAngle) {
-                        currentStickAngle += 2;
+                        currentStickAngle += stickAngleGrow;
                         setStickAngle(currentStickAngle);
                         requestAnimationFrame(dropStick);
                     } else {

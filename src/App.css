@@ -43,6 +43,8 @@ button {
   background-image: url('../src/assets/bg.jpg');
   background-size: cover;
   background-position: center;
+  height: 100svh;
+  width: 100%;
 }
 
 * {
