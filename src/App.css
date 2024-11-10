@@ -12,6 +12,7 @@
 #loading,
 #play,
 #dead {
+  padding:15px;
   position: absolute;
   top: 0;
   left: 0;
@@ -21,10 +22,22 @@
   align-items: center;
   justify-content: center;
   flex-flow: column;
-  font-size: 64px;
   color: #fff;
   background: rgba(0, 0, 0, 0.486);
   font-weight: bold;
+}
+
+#play h1,
+#dead h2,
+#loading {
+  font-size: 64px;
+}
+
+#play h3{
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 15px;
+  max-width: 600px;
 }
 
 button {
@@ -60,9 +73,10 @@ button {
 
 @media screen and (max-width: 850px) {
 
-  #loading,
-  #play,
-  #dead {
+  #play h1,
+  #dead h2,
+  #loading {
     font-size: 36px;
   }
+
 }

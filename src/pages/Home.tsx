@@ -59,11 +59,11 @@ export const Home = () => {
 
 
             if (game && isPlaying) {
-                const cameraMoveTemp = isMobile ? 3 : 3
+                const cameraMoveTemp = isMobile ? 5 : 3
 
-                const stickGrowTemp = isMobile ? 15 : 30
+                const stickGrowTemp = isMobile ? 20 : 30
                 const stickWidthTemp = isMobile ? 5 : 15
-                const stickAngleGrowTemp = isMobile ? 5 : 2
+                const stickAngleGrowTemp = isMobile ? 5 : 5
                 
                 const wallHeightTemp = isMobile ? 200 : 500
                 const wallGrow = isMobile ? 100 : 300
@@ -125,12 +125,12 @@ export const Home = () => {
                     ctx.shadowBlur = 10;
                     ctx.shadowOffsetX = 4;
                     ctx.shadowOffsetY = 4;
-                    ctx.font = "80px Arial";
+                    ctx.font = "60px Arial";
                     ctx.fillStyle = "#00ff00";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
 
-                    ctx.fillText(`${score.toString()}`, canvas.width / 2, 150);
+                    ctx.fillText(`Score: ${score.toString()}`, canvas.width / 2, 150);
 
                     // draw score
 
@@ -207,13 +207,12 @@ export const Home = () => {
             if (gameState === "growing") {
                 setGameState("dropping")
                 const targetWall = walls[walls.length - 1]
-                const fixYTemp = targetWall.height === walls[currentWall].height ? 0 : (targetWall.height < walls[currentWall].height ? fixY : - fixY)
-                const betweenStickAngle = calculateAngleBetweenPlatforms(stickPosition.x, stickPosition.y, targetWall.x, targetWall.y - fixYTemp, targetWall.height - walls[currentWall].height)
-                const targetStickAngle = 90 - betweenStickAngle
+                const betweenStickAngle = calculateAngleBetweenPlatforms(stickPosition.x, stickPosition.y, targetWall.x, targetWall.y, stickPosition.y - targetWall.y)
+                const targetStickAngle = targetWall.height < walls[currentWall].height ? 90 - betweenStickAngle : 90 - betweenStickAngle - stickAngleGrow
                 const betweenStickAngleRadians = -betweenStickAngle * Math.PI / 180
                 let currentStickAngle = 0
                 const dropStick = () => {
-                    if (currentStickAngle < targetStickAngle) {
+                    if (currentStickAngle <= targetStickAngle) {
                         currentStickAngle += stickAngleGrow;
                         setStickAngle(currentStickAngle);
                         requestAnimationFrame(dropStick);
@@ -249,7 +248,7 @@ export const Home = () => {
                                 setHeroPosition({ x: currentHeroPositionX, y: currentHeroPositionY, distance: currentDistance })
                                 requestAnimationFrame(heroWalking);
                             } else {
-                                if (currentHeroPositionX >= targetWall.x && currentHeroPositionX + heroSize.width / 8 <= targetWall.x + targetWall.width) {
+                                if (currentHeroPositionX >= targetWall.x && currentHeroPositionX + heroSize.width / 6 <= targetWall.x + targetWall.width) {
                                     let cameraOffsetTemp = cameraOffset;
                                     const moveCamera = setInterval(() => {
                                         if (cameraOffsetTemp < targetWall.x - wallX) {
@@ -309,10 +308,11 @@ export const Home = () => {
         {isLoading && <div id="loading">Loading...</div>}
         {!isLoading && !isPlaying && !isDead && <div id="play">
             <h1>TED BEAR ETH</h1>
+            <h3>How to play?<br/> Hold the mouse / finger on the screen to make the stick extend and release to move down</h3>
             <button onClick={() => setIsPlaying(true)}>Play game</button>
         </div>}
         {!isLoading && isDead && <div id="dead">
-            <h1>BRO! YOU DEAD!</h1>
+            <h2>BRO! YOU DEAD!</h2>
             <button onClick={() => {
                 setIsDead(false)
                 setIsPlaying(true)
