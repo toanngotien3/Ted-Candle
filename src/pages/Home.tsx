@@ -7,6 +7,7 @@ import { calculateAngleBetweenPlatforms } from "../utils/utils"
 
 export const Home = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
+    const [growingInterval, setGrowingInterval] = useState<number>(0)
     const [heroImage, setHeroImage] = useState<CanvasImageSource | null>(null)
     const [heroWalkImage, setHeroWalkImage] = useState<CanvasImageSource | null>(null)
     const [beerImage, setBeerImage] = useState<CanvasImageSource | null>(null)
@@ -32,6 +33,7 @@ export const Home = () => {
     const [heroPosition, setHeroPosition] = useState({ x: 0, y: 0, distance: 0 });
     const [heroSize, setHeroSize] = useState({ width: 0, height: 0 })
 
+    const [stickColor, setStickColor] = useState("#00ff00")
     const [stickGrow, setStickGrow] = useState(0)
     const [stickAngleGrow, setStickAngleGrow] = useState(0)
     const [stickWidth, setStickWidth] = useState(0)
@@ -42,6 +44,10 @@ export const Home = () => {
     const [fixY] = useState(15)
     const [fixX] = useState(15)
 
+
+    useEffect(() => {
+        if (isLoading) setTimeout(() => setIsLoading(false), 2000)
+    }, [isLoading])
 
     useEffect(() => {
         if (!isLoading) {
@@ -58,13 +64,13 @@ export const Home = () => {
             const tobacoImage = document.getElementById('tobaco') as CanvasImageSource
 
 
-            if (game && isPlaying) {
+            if (game && !isDead) {
                 const cameraMoveTemp = isMobile ? 5 : 3
 
-                const stickGrowTemp = isMobile ? 20 : 30
+                const stickGrowTemp = isMobile ? 15 : 15
                 const stickWidthTemp = isMobile ? 5 : 15
                 const stickAngleGrowTemp = isMobile ? 5 : 5
-                
+
                 const wallHeightTemp = isMobile ? 200 : 500
                 const wallGrow = isMobile ? 100 : 300
                 const wallWidthTemp = isMobile ? 100 : 200
@@ -78,7 +84,7 @@ export const Home = () => {
                 const heroPositionYTemp = game.offsetHeight - wallHeightTemp - heroSizeTemp.height
 
                 setScore(0)
-                setCameraMove(cameraMoveTemp)                                    
+                setCameraMove(cameraMoveTemp)
 
                 setWallX(wallXtemp)
                 setWalls([{ x: wallXtemp, y: wallYtemp, width: wallWidthTemp, height: wallHeightTemp }, { x: wallXtemp + wallStepTemp, y: wallYtemp, width: wallWidthTemp, height: wallHeightTemp }])
@@ -86,6 +92,7 @@ export const Home = () => {
                 setWallStep(wallStepTemp)
                 setCurrentWall(0)
 
+                setStickColor("#00ff00")
                 setStickGrow(stickGrowTemp)
                 setStickAngleGrow(stickAngleGrowTemp)
                 setStickWidth(stickWidthTemp)
@@ -152,19 +159,15 @@ export const Home = () => {
 
                     //draw stick
 
-                    if (gameState === 'growing' || gameState === 'dropping' || gameState === "walking" || gameState === "end") {
+                    if (gameState === 'ready' || gameState == "droping" || gameState === 'walking' || gameState === "dying") {
                         ctx.save()
                         ctx.translate(stickPosition.x - cameraOffset - fixX, stickPosition.y + fixY);
                         ctx.rotate((stickAngle * Math.PI) / 180);
-                        ctx.fillStyle = '#00ff00';
+                        ctx.fillStyle = stickColor;
                         ctx.fillRect(0,
                             -stickLength,
                             stickWidth,
                             stickLength);
-                        // ctx.drawImage(tobacoImage, 0,
-                        //     -stickLength,
-                        //     stickWidth,
-                        //     stickLength)
                         ctx.restore()
                     }
 
@@ -179,49 +182,41 @@ export const Home = () => {
 
     }, [isInit, stickLength, gameState, stickAngle, heroPosition, cameraOffset, isPlaying])
 
+
     useEffect(() => {
-        if (gameState === "growing") {
-            const canvas = canvasRef.current;
-            const ctx = canvas?.getContext('2d');
-            if (ctx && canvas) {
-                const growingInterval = setInterval(() => {
-                    setStickLength((prev) => prev + stickGrow)
-                }, 100)
-                return () => clearInterval(growingInterval);
-            }
-        }
+        if (gameState === "ready" && isPlaying) growCandle()
+    }, [gameState, isPlaying])
 
-    }, [gameState])
 
+    const growCandle = () => {
+        let growingInterval = setInterval(() => {
+            setStickLength((prev) => prev + stickGrow)
+        }, 100)
+        setGrowingInterval(growingInterval)
+    }
 
     const handleMouseDown = () => {
         if (isInit && isPlaying) {
             if (gameState === "ready") {
-                setGameState("growing")
-            }
-        }
-    }
-
-    const handleMouseUp = () => {
-        if (isInit && isPlaying) {
-            if (gameState === "growing") {
-                setGameState("dropping")
+                clearInterval(growingInterval)
+                setGameState("playing")
                 const targetWall = walls[walls.length - 1]
                 const betweenStickAngle = calculateAngleBetweenPlatforms(stickPosition.x, stickPosition.y, targetWall.x, targetWall.y, stickPosition.y - targetWall.y)
                 const targetStickAngle = targetWall.height < walls[currentWall].height ? 90 - betweenStickAngle : 90 - betweenStickAngle - stickAngleGrow
                 const betweenStickAngleRadians = -betweenStickAngle * Math.PI / 180
                 let currentStickAngle = 0
                 const dropStick = () => {
+                    setGameState("droping")
                     if (currentStickAngle <= targetStickAngle) {
                         currentStickAngle += stickAngleGrow;
                         setStickAngle(currentStickAngle);
                         requestAnimationFrame(dropStick);
                     } else {
-                        setGameState('walking');
                         let currentHeroPositionX = heroPosition.x
                         let currentHeroPositionY = heroPosition.y
                         let currentDistance = heroPosition.distance
                         const heroWalking = () => {
+                            setGameState("walking")
                             const conditionStick = stickLength
                             if (currentHeroPositionX <= stickPosition.x + conditionStick) {
                                 currentDistance += 0.2
@@ -262,13 +257,15 @@ export const Home = () => {
                                     setWalls([...walls, { x: targetWall.x + wallStep + Math.random() * wallStep, y: walls[0].y - randomWallHeight, width: walls[0].width, height: walls[0].height + randomWallHeight }])
                                     setStickLength(0);
                                     setStickAngle(0);
+                                    if (stickGrow < stickGrow + 10) setStickGrow(stickGrow + 1)
                                     setCurrentWall(currentWall + 1)
                                     setHeroPosition({ x: currentHeroPositionX, y: currentHeroPositionY, distance: 0 })
                                     setStickPosition({ x: targetWall.x + targetWall.width, y: targetWall.y })
                                     setGameState("ready")
                                 } else {
                                     setStickAngle(180);
-                                    setGameState("end")
+                                    setStickColor("red")
+                                    setGameState("dying")
                                     const heroFalling = () => {
                                         if (currentHeroPositionY <= walls[0].y + walls[0].height - heroSize.height) {
                                             currentHeroPositionY += 5
@@ -293,22 +290,17 @@ export const Home = () => {
     }
 
 
-    useEffect(() => {
-        if (isLoading) setTimeout(() => setIsLoading(false), 2000)
-    }, [isLoading])
 
     return <div
         onTouchStart={handleMouseDown}
-        onTouchEnd={handleMouseUp}
         onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
         id="game"
         className="h-screen w-full"
     >
         {isLoading && <div id="loading">Loading...</div>}
         {!isLoading && !isPlaying && !isDead && <div id="play">
             <h1>TED BEAR ETH</h1>
-            <h3>How to play?<br/> Hold the mouse / finger on the screen to make the stick extend and release to move down</h3>
+            <h3>How to play?<br /> Click on the screen to make the stick stop grow and fall!</h3>
             <button onClick={() => setIsPlaying(true)}>Play game</button>
         </div>}
         {!isLoading && isDead && <div id="dead">
