@@ -65,7 +65,7 @@ export const Home = () => {
 
 
             if (game && !isDead) {
-                const cameraMoveTemp = isMobile ? 5 : 3
+                const cameraMoveTemp = isMobile ? 6 : 3
 
                 const stickGrowTemp = isMobile ? 10 : 20
                 const stickWidthTemp = isMobile ? 5 : 15
@@ -138,7 +138,6 @@ export const Home = () => {
                     ctx.textBaseline = "middle";
 
                     ctx.fillText(`Score: ${score.toString()}`, canvas.width / 2, 150);
-
                     // draw score
 
 
@@ -250,18 +249,20 @@ export const Home = () => {
                                             cameraOffsetTemp += cameraMove
                                             setCameraOffset(cameraOffsetTemp);
                                         }
-                                        else clearInterval(moveCamera)
+                                        else {
+                                            clearInterval(moveCamera)
+                                            let randomWallHeight = (Math.floor(Math.random() * 2) - 1) * wallGrow
+                                            setScore(prev => prev + 1)
+                                            setWalls([...walls, { x: targetWall.x + wallStep + Math.random() * wallStep, y: walls[0].y - randomWallHeight, width: walls[0].width, height: walls[0].height + randomWallHeight }])
+                                            setStickLength(0);
+                                            setStickAngle(0);
+                                            if (stickGrow < stickGrow + 10) setStickGrow(stickGrow + 1)
+                                            setCurrentWall(currentWall + 1)
+                                            setHeroPosition({ x: currentHeroPositionX, y: currentHeroPositionY, distance: 0 })
+                                            setStickPosition({ x: targetWall.x + targetWall.width, y: targetWall.y })
+                                            setGameState("ready")
+                                        }
                                     }, 1)
-                                    let randomWallHeight = (Math.floor(Math.random() * 2) - 1) * wallGrow
-                                    setScore(prev => prev + 1)
-                                    setWalls([...walls, { x: targetWall.x + wallStep + Math.random() * wallStep, y: walls[0].y - randomWallHeight, width: walls[0].width, height: walls[0].height + randomWallHeight }])
-                                    setStickLength(0);
-                                    setStickAngle(0);
-                                    if (stickGrow < stickGrow + 10) setStickGrow(stickGrow + 1)
-                                    setCurrentWall(currentWall + 1)
-                                    setHeroPosition({ x: currentHeroPositionX, y: currentHeroPositionY, distance: 0 })
-                                    setStickPosition({ x: targetWall.x + targetWall.width, y: targetWall.y })
-                                    setGameState("ready")
                                 } else {
                                     setStickAngle(180);
                                     setStickColor("red")
